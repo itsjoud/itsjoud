@@ -1,0 +1,177 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner with QuaggaJS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+</head>
+<body>
+    <h1>Barcode Scanner</h1>
+    <div id="scanner-container" style="width:500px; height:400px;"></div>
+    <div id="barcode-result"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-container'),
+                    constraints: {
+                        width: 500,
+                        height: 400,
+                        facingMode: "environment" // Use "user" for the front camera
+                    }
+                },
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                var code = result.codeResult.code;
+                document.querySelector('#barcode-result').innerText = "Scanned Barcode: " + code;
+
+                // Example: Send the barcode to Google Sheets (you can add your API call here)
+                // sendBarcodeToGoogleSheets(code);
+            });
+        });
+
+        // Example: Send the barcode to Google Sheets (similar to your original implementation)
+        function sendBarcodeToGoogleSheets(barcode) {
+            const apiKey = 'AIzaSyArEHfwMhEsnxozgBYOOBEKe-WfRSjfk2E';
+            const sheetId = '1luFmSbHsIlCBOF2ejmJ1emMtPuP8Yw0Kmj8bkzPbQo0';
+            const range = 'Sheet1';
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=RAW&key=${apiKey}`;
+
+            const data = {
+                values: [
+                    [barcode, new Date().toISOString()]
+                ]
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner with QuaggaJS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+</head>
+<body>
+    <h1>Barcode Scanner</h1>
+    <div id="scanner-container" style="width:500px; height:400px;"></div>
+    <div id="barcode-result"></div>
+    <div id="item-name"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-container'),
+                    constraints: {
+                        width: 500,
+                        height: 400,
+                        facingMode: "environment" // Use "user" for the front camera
+                    }
+                },
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                console.log("Initialization finished. Ready to start");
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                var code = result.codeResult.code;
+                document.querySelector('#barcode-result').innerText = "Scanned Barcode: " + code;
+
+                // Check the barcode against Google Sheets
+                checkBarcodeInGoogleSheets(code);
+            });
+        });
+
+        // Check the barcode against the Google Sheet
+        function checkBarcodeInGoogleSheets(barcode) {
+            const apiKey = 'AIzaSyArEHfwMhEsnxozgBYOOBEKe-WfRSjfk2E';
+            const sheetId = '1luFmSbHsIlCBOF2ejmJ1emMtPuP8Yw0Kmj8bkzPbQo0';
+            const range = 'Sheet1';
+       
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.values) {
+                throw new Error('No data found or unauthorized access.');
+            }
+
+            const rows = data.values;
+            let itemName = null;
+
+            // Assuming first row contains headers, so we start from the second row
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i][1] === barcode) { // Compare with column B (index 1)
+                    itemName = rows[i][0]; // Get the item name from column A (index 0)
+                    break;
+                }
+            }
+
+            if (itemName) {
+                document.querySelector('#item-name').innerText = `Item: ${itemName}`;
+            } else {
+                document.querySelector('#item-name').innerText = 'Item not found';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.querySelector('#item-name').innerText = 'Error accessing Google Sheets';
+        });
+}
+
+    </script>
+</body>
+</html>
+
